@@ -80,11 +80,15 @@ public class AprilTagLinear extends LinearOpMode {
                 for (AprilTagDetection detection : currentDetections) {
                     rotationAngle = 0;
                     if (detection.metadata != null) {
-                        rotationAngle =  detection.ftcPose.bearing*Math.PI/180.0;
-                        drive.setMotorPositions(0,0,-(rotationAngle/8.0)); // rotates the robot
+                        int tagID = detection.id;
+                        telemetry.addData("TAG ID = ", tagID);
+                        if ((tagID == 8) || (tagID == 9)) {
+                            rotationAngle = detection.ftcPose.bearing * Math.PI / 180.0;
+                            telemetry.addData("ROTATION ANGLE = ", rotationAngle);
+                            drive.setMotorPositions(0, 0, -(rotationAngle / 8.0)); // rotates the robot (the /8.0 ~ Kp)
+                        }
                     }
                 }   // end for() loop
-                telemetry.addData("ROTATION ANGLE = ", rotationAngle);
 
                 //telemetryAprilTag();
 
@@ -119,7 +123,25 @@ public class AprilTagLinear extends LinearOpMode {
     private void initAprilTag() {
 
         // Create the AprilTag processor the easy way.
-        aprilTag = AprilTagProcessor.easyCreateWithDefaults();
+        //aprilTag = AprilTagProcessor.easyCreateWithDefaults();
+        // Create the AprilTag processor.
+        aprilTag = new AprilTagProcessor.Builder()
+
+                // The following default settings are available to un-comment and edit as needed.
+                .setDrawAxes(true)
+                .setDrawCubeProjection(true)
+                //.setDrawTagOutline(true)
+                //.setTagFamily(AprilTagProcessor.TagFamily.TAG_36h11)
+                //.setTagLibrary(AprilTagGameDatabase.getCenterStageTagLibrary())
+                //.setOutputUnits(DistanceUnit.INCH, AngleUnit.DEGREES)
+
+                // == CAMERA CALIBRATION ==
+                // If you do not manually specify calibration parameters, the SDK will attempt
+                // to load a predefined calibration for your camera.
+                .setLensIntrinsics(546.0858, 546.0858, 321.9829, 242.9702)
+                // ... these parameters are fx, fy, cx, cy.
+
+                .build();
 
         // Create the vision portal the easy way.
         if (USE_WEBCAM) {
