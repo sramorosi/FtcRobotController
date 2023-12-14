@@ -138,7 +138,8 @@ public class AprilTagLinear extends LinearOpMode {
                 // == CAMERA CALIBRATION ==
                 // If you do not manually specify calibration parameters, the SDK will attempt
                 // to load a predefined calibration for your camera.
-                .setLensIntrinsics(546.0858, 546.0858, 321.9829, 242.9702)
+                .setLensIntrinsics(546.0858, 546.0858, 321.9829, 242.9702)  // for MOTO E4
+                //.setLensIntrinsics(952.837, 952.837, 622.758, 398.223)  // for Logi C920
                 // ... these parameters are fx, fy, cx, cy.
 
                 .build();
