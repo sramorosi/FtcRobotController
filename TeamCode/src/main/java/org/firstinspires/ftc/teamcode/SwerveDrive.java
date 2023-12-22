@@ -36,11 +36,11 @@ public class SwerveDrive extends OpMode{
     // Drive Class
     TwoWheelDiffSwerveClass drive;
 
-    Orientation or; // robots orientation (x,y,z angles) from IMU on Hub
+    Orientation orient; // robots orientation (x,y,z angles) from IMU on Hub
     double globalIMUHeading;
 
     double targetPodAngles = 0;  // angle relative to the initial angles
-    int deltaS = 0;
+    int deltaPosTicks = 0;
 
     /*
      * Code to run ONCE when the driver touches INIT
@@ -53,6 +53,7 @@ public class SwerveDrive extends OpMode{
         pots = new TwoFullRotationPotClass();
         pots.initPots(hardwareMap);
         pots.getAngleFromPots(false,0); // find out where the wheels are pointed
+        telemetry.addData("INITIAL POT 1 ="," %.05f, POT 2 = %.05f",pots.angle1,pots.angle2);
 
         drive.initWheelAngles(pots.angle1, pots.angle2,INITIAL_WHEEL_ANGLE,INITIAL_WHEEL_ANGLE);  // set the wheels to desired angle
 
@@ -68,13 +69,13 @@ public class SwerveDrive extends OpMode{
 
         // This seems to help smooth the imu data
         imu.resetDeviceConfigurationForOpMode();
-        or = imu.getRobotOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.RADIANS);
-        globalIMUHeading = or.secondAngle; // save the starting heading
+        orient = imu.getRobotOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.RADIANS);
+        globalIMUHeading = orient.secondAngle; // save the starting heading
 
-        // Send telemetry message to signify robot waiting;
-        telemetry.addData("INITIAL POT 1 ="," %.05f, POT 2 = %.05f",pots.angle1,pots.angle2);
         pots.getAngleFromPots(false,0); // find out where the wheels are pointed
         telemetry.addData("NEW POT 1 ="," %.05f, POT 2 = %.05f",pots.angle1,pots.angle2);
+
+        // Send telemetry message to signify robot waiting;
         telemetry.addData(">", "Swerve Robot Ready.  Press Play.");
 
         // Write to log file
@@ -95,42 +96,46 @@ public class SwerveDrive extends OpMode{
         double gpRightX, gpRightY, gpLeftX;
         double loopTime;
         double fwdSpeed;
+        double cubeSpeed;
         boolean goHeadingUpdate;
 
-        gpRightX = gamepad1.right_stick_x; // used for wheel direction
-        gpRightY = gamepad1.right_stick_y; // used for wheel direction
+        gpRightX = gamepad1.right_stick_x; // used for wheel direction & translation
+        gpRightY = gamepad1.right_stick_y; // used for wheel direction & translation
         gpLeftX = gamepad1.left_stick_x; // used for robot orientation
+        telemetry.addData("Right stick y", gpRightY);
+        telemetry.addData("Right stick x", gpRightX);
+        telemetry.addData("Left stick x", gpLeftX);
 
-        fwdSpeed = Math.hypot(gpRightX,gpRightY); // used for robot speed
+        fwdSpeed = Math.hypot(gpRightX,gpRightY); // used for robot speed (can be 1.414)
 
-        or = imu.getRobotOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.RADIANS);
+        orient = imu.getRobotOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.RADIANS);
 
         // setup so that wheels hold current angle if there is no input
-        if (fwdSpeed>0.1) { // detect Right joystick movement, update angle
+        if (fwdSpeed>0.05) { // detect Right joystick movement, update angle
             targetPodAngles = Math.atan2(gpRightX,-gpRightY); // atan2(y,x) = radians
-            if (fwdSpeed>0.2) {
-                deltaS = (int) (fwdSpeed*0.5*TICKS_PER_INCH);  // amount to move
+            if (fwdSpeed>0.15) {  // apply translation movement
+                cubeSpeed = fwdSpeed*fwdSpeed*fwdSpeed*0.4;  // cube function and Kp
+                deltaPosTicks = (int) (cubeSpeed*TICKS_PER_INCH);  // amount to move
             } else {
-                deltaS = 0;
+                deltaPosTicks = 0;
             }
         } else {
-            deltaS = 0;
+            deltaPosTicks = 0;
         }
 
-        // check if the wheel angle supports a heading change
+        // check if the wheel angle IS IN THE BAND that supports a heading change
+        // TBD:  USE A CONSTANT FOR THE BAND AND A VARIABLE FOR THE ABS VALUE
         goHeadingUpdate = ((Math.abs(targetPodAngles)>= -.2) && (Math.abs(targetPodAngles)<=0.2));
         if(goHeadingUpdate) {
             drive.robotAngle += (gpLeftX/20.0); // update the robot angle in radians
         }
 
-        drive.setRobotTranslation(deltaS);
+        drive.setRobotTranslation(deltaPosTicks);  // doesn't move robot, just adds translation ticks
         drive.setMotorPositions(targetPodAngles,targetPodAngles,0.0); // Moves the robot
 
-        telemetry.addData("Right stick y", gpRightY);
-        telemetry.addData("Right stick x", gpRightX);
-        telemetry.addData("Left stick x", gpLeftX);
-        //telemetry.addData("Right Trigger =",fwdSpeed);
         telemetry.addData("Target Pod Angle =","%.03f", targetPodAngles);
+        telemetry.addData("wheel 1 Angle =","%.03f", drive.wheel1Angle);
+        telemetry.addData("wheel 2 Angle =","%.03f", drive.wheel2Angle);
         telemetry.addData("Robot Angle =","%.03f", drive.robotAngle);
         telemetry.update();
 
@@ -139,7 +144,7 @@ public class SwerveDrive extends OpMode{
 
         RobotLog.d("SRA-loop-time = %.05f, loop = %.05f",priorTime,loopTime);
         RobotLog.d("SRA-loop-gamepad = %.03f, %.03f",gamepad1.right_stick_x,gamepad1.right_stick_y);
-        RobotLog.d("SRA-IMU Angles RobAngle = %.03f, %.03f, %.03f, %.03f",drive.robotAngle,or.firstAngle,or.secondAngle,or.thirdAngle);
+        RobotLog.d("SRA-IMU Angles RobAngle = %.03f, %.03f, %.03f, %.03f",drive.robotAngle, orient.firstAngle, orient.secondAngle, orient.thirdAngle);
     }
 
     @Override

@@ -37,16 +37,11 @@ import com.qualcomm.robotcore.hardware.Servo;
 /*
  * This OpMode cycles a single servo back and forward until Stop is pressed.
  * The code is structured as a LinearOpMode
- * INCREMENT sets how much to increase/decrease the servo position each cycle
+ * INCREMENT sets how much to increase/decrease the servo position each cycle (not used)
  * CYCLE_MS sets the update period.
  *
  * This code assumes a Servo configured with the name "svo" as is found on a Robot.
  *
- * NOTE: When any servo position is set, ALL attached servos are activated, so ensure that any other
- * connected servos are able to move freely before running this test.
- *
- * Use Android Studio to Copy this Class, and Paste it into your team's code folder with a new name.
- * Remove or comment out the @Disabled line to add this OpMode to the Driver Station OpMode list
  */
 @TeleOp(name = "Scan Servo")
 public class ScanServo extends LinearOpMode {
@@ -60,7 +55,7 @@ public class ScanServo extends LinearOpMode {
     Servo   servo;
     //double  position = (MAX_POS - MIN_POS) / 2; // Start at halfway position
     double  position = MAX_POS; // Start at MAX_POS
-    boolean rampUp = false;
+    boolean rampUp = false;  // no ramps.  go full speed
 
 
     @Override

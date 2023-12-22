@@ -86,23 +86,25 @@ public class TwoWheelDiffSwerveClass {
         motor2d.setMode(DcMotor.RunMode.RUN_TO_POSITION);
     }
     public void setRobotTranslation(int deltaRobotPosTicks) {
-        targetPosition += deltaRobotPosTicks;
+        // TBD  ONE FOR EACH WHEEL???
+        targetPosition = targetPosition + wheel1Sign*deltaRobotPosTicks;
     }
     public void setMotorPositions(double newWheel1Angle, double newWheel2Angle,double deltaRobotAngle) {
         int ticksA,ticksB, ticksC,ticksD;
         int turnPod1, turnPod2;
         int robotHeadingTicks;
+        double deltaAngle;
 
         robotAngle += deltaRobotAngle;
         robotHeadingTicks = (int) (robotAngle * TICKS_PER_RAD_ROBOT_TURN); // convert robot heading to ticks
 
-        wheel1Angle = newWheel1Angle;
-        //wheel1Angle = getShortestTurnAngle(wheel1Angle,newWheel1Angle,1);
-        turnPod1 = (int) (wheel1Angle* TICKS_PER_RAD_WHEEL_TURN)*wheel1Sign;
+        deltaAngle = getShortestTurnAngle(wheel1Angle,newWheel1Angle,1);
+        wheel1Angle = moduloAngle(wheel1Angle+deltaAngle);
+        turnPod1 = (int) (wheel1Angle* TICKS_PER_RAD_WHEEL_TURN);
 
-        wheel2Angle = newWheel2Angle;
-        //wheel2Angle = getShortestTurnAngle(wheel2Angle,newWheel2Angle,2);
-        turnPod2 = (int) (wheel2Angle* TICKS_PER_RAD_WHEEL_TURN)*wheel2Sign;
+        deltaAngle = getShortestTurnAngle(wheel2Angle,newWheel2Angle,2);
+        wheel2Angle = moduloAngle(wheel2Angle+deltaAngle);
+        turnPod2 = (int) (wheel2Angle* TICKS_PER_RAD_WHEEL_TURN);
 
         // Add together initial pod angles, position ticks, pot turn ticks and robot turn ticks
         ticksA = initialTurnTicks1 + targetPosition + turnPod1 - robotHeadingTicks;
@@ -118,67 +120,46 @@ public class TwoWheelDiffSwerveClass {
 
     /**
      * Returns the shortest turn angle
-     * @param currentWheelAng Current Wheel Angle
-     * @param newAngle Desired wheel angle
-     * @return The smallest delta angle to get to the new angle
      */
-    public double getShortestTurnAngle(double currentWheelAng, double newAngle, int pod) {
+    public double getShortestTurnAngle(double currentAngle, double newAngle, int pod) {
         // newAngle will be from -PI to PI, because it uses ATAN2
         double deltaAngle;
-        double currentRemainderAngle;
-        double newRemainder;
         int sign;
 
-        // Convert current angle into number from zero to 2*PI
-        currentRemainderAngle = moduloAngle(currentWheelAng);
-
-        // Convert new angle into number from -PI to PI
-        newRemainder = moduloAngle(newAngle);
-        if(newRemainder>Math.PI) newRemainder -= (2.0*Math.PI);
-
         // Find the shortest turn to newAngle
-        deltaAngle = newRemainder - currentRemainderAngle;
-        /*
-        if(deltaAngle<=-1.5*Math.PI) {
-            deltaAngle = currentRemainderAngle-(newRemainder+2.0*Math.PI);
+        deltaAngle = newAngle - currentAngle;
+
+        if(deltaAngle>1.5*Math.PI) {
+            deltaAngle = deltaAngle-2.0*Math.PI;
             sign = 1;
-        } else if(deltaAngle<=-0.5*Math.PI) {
-            deltaAngle = newRemainder-(currentRemainderAngle-Math.PI);
+        } else if(deltaAngle>0.5*Math.PI) {
+            deltaAngle = deltaAngle-Math.PI;
             sign = -1;
-        } else if(deltaAngle<=0.5*Math.PI) {
-            deltaAngle = newRemainder - currentRemainderAngle;
+        } else if(deltaAngle>-0.5*Math.PI) {
+            deltaAngle = deltaAngle + 0.0;
             sign = 1;
-        } else if(deltaAngle<=1.5*Math.PI) {
-            deltaAngle = newRemainder-(currentRemainderAngle+Math.PI);
+        } else if(deltaAngle>-1.5*Math.PI) {
+            deltaAngle = deltaAngle+Math.PI;
             sign = -1;
         } else {
-            deltaAngle = newRemainder-(currentRemainderAngle+2.0*Math.PI);
+            deltaAngle = deltaAngle+2.0*Math.PI;
             sign = 1;
         }
 
         if(pod==1) wheel1Sign = sign;
         else wheel2Sign = sign;
-*/
-        if(deltaAngle < -Math.PI) {
-            deltaAngle = newAngle + (2.0*Math.PI) - currentRemainderAngle;
-        }
 
         return deltaAngle;
     }
     /**
-     * Returns an angle from 0 to 2*PI for any real angle
-     * @param inAngle any real angle
-     * @return an angle from 0 to 2*PI
+     * Returns an angle from PI to -PI for any real angle
      */
     public double moduloAngle(double inAngle) {
         double currentRemainderAngle;
 
-        // Convert current angle into number from zero to 2*PI
-        currentRemainderAngle = inAngle % (2.0*Math.PI);
-        // Java modulo can return negative remainder, so the next step is needed
-        if (currentRemainderAngle < 0.0) currentRemainderAngle += 2.0*Math.PI;
+        currentRemainderAngle = inAngle % Math.PI;
+
         return currentRemainderAngle;
     }
-
 
 }
